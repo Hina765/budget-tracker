@@ -1,4 +1,4 @@
-import 'package:expense_tracker/screens/splash_screen.dart';
+import 'package:expense_tracker/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
