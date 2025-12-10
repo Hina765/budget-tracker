@@ -13,75 +13,87 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  bool isExpense = false;
+  bool isExpense = true;
 
-  final _amountController = TextEditingController();
-  final _addNoteController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+
     if (widget.expense != null) {
-      isExpense = widget.expense!['type'] == 'expense';
-      _amountController.text = widget.expense!['amount'].toString();
-      _addNoteController.text = widget.expense!['notes'];
-    } else {
-      isExpense = true;
+      final data = widget.expense!;
+      isExpense = data['type'] == 'expense';
+      _amountController.text = data['amount'].toString();
+      _noteController.text = data['notes'] ?? '';
     }
   }
 
   @override
   void dispose() {
     _amountController.dispose();
-    _addNoteController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    final text = _amountController.text.trim();
-    if (text.isEmpty) return;
+    final amountText = _amountController.text.trim();
+    if (amountText.isEmpty) return;
 
-    final amount = double.tryParse(text);
-    if (amount == null) return;
+    final double? amount = double.tryParse(amountText);
+    if (amount == null || amount <= 0) return;
 
-    final notes = _addNoteController.text.trim();
+    final note = _noteController.text.trim();
     final type = isExpense ? 'expense' : 'income';
 
     if (widget.expense == null) {
-      // add
-      await DbHelper.addItem(amount, notes, type);
+      await DbHelper.addItem(amount, note, type);
     } else {
-      // update
-      await DbHelper.updateItem(widget.expense!['id']!, amount, notes, type);
+      await DbHelper.updateItem(
+        widget.expense!['id'],
+        amount,
+        note,
+        type,
+      );
     }
 
-    Navigator.pop(context, true); // return true to indicate change
+    if (!mounted) return;
+    Navigator.pop(context, true);
   }
-
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.expense != null;
+    final bool isEditing = widget.expense != null;
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.49,
+        height: MediaQuery.of(context).size.height * 0.50,
         decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20), topRight: Radius.circular(20))),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
               Center(
-                  child: AppText(isEditing ? 'Edit Transaction' : 'Add Transaction',
-                      22, Colors.black, FontWeight.bold)),
+                child: AppText(
+                  isEditing ? 'Edit Transaction' : 'Add Transaction',
+                  22,
+                  Colors.black,
+                  FontWeight.bold,
+                ),
+              ),
+
               const SizedBox(height: 20),
 
-              // Toggle button
+              // INCOME / EXPENSE Toggle
               Center(
                 child: Container(
                   width: MediaQuery.of(context).size.width * 0.8,
@@ -91,120 +103,122 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      //income container
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            setState(() {
-                              isExpense = false;
-                            });
+                            setState(() => isExpense = false);
                           },
                           child: Container(
                             decoration: BoxDecoration(
-                                color: !isExpense
-                                    ? Colors.green
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(30)),
+                              borderRadius: BorderRadius.circular(30),
+                              color: isExpense ? Colors.transparent : Colors.green,
+                            ),
                             child: Center(
-                                child: AppText(
-                                    'INCOME',
-                                    20,
-                                    !isExpense ? Colors.white : Colors.black,
-                                    FontWeight.bold)),
+                              child: AppText(
+                                'INCOME',
+                                20,
+                                isExpense ? Colors.black : Colors.white,
+                                FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-
-                      //expense container
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            setState(() {
-                              isExpense = true;
-                            });
+                            setState(() => isExpense = true);
                           },
                           child: Container(
                             decoration: BoxDecoration(
-                                color: isExpense ? Colors.red : Colors.transparent,
-                                borderRadius: BorderRadius.circular(30)),
+                              borderRadius: BorderRadius.circular(30),
+                              color: isExpense ? Colors.red : Colors.transparent,
+                            ),
                             child: Center(
-                                child: AppText(
-                                    'EXPENSE',
-                                    20,
-                                    isExpense ? Colors.white : Colors.black,
-                                    FontWeight.bold)),
+                              child: AppText(
+                                'EXPENSE',
+                                20,
+                                isExpense ? Colors.white : Colors.black,
+                                FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
-                      )
+                      ),
                     ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 25),
+
+              AppText('Amount', 18, Colors.black, FontWeight.w600),
+              const SizedBox(height: 10),
+
+              Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: TextField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    hintText: '0.00',
+                    border: InputBorder.none,
                   ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              AppText('Amount', 20, Colors.black, FontWeight.w600),
-
+              AppText('Add Note', 18, Colors.black, FontWeight.w600),
               const SizedBox(height: 10),
 
-              // amount textfield
               Container(
-                height: 50,
-                width: double.infinity,
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(20)),
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: TextField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
+                  controller: _noteController,
                   decoration: const InputDecoration(
-                      hintText: '0.00',
-                      border: OutlineInputBorder(borderSide: BorderSide.none)),
+                    hintText: 'e.g., Salary, Coffee, Shopping',
+                    border: InputBorder.none,
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 20),
-
-              AppText('Add Note', 20, Colors.black, FontWeight.w600),
-
-              const SizedBox(height: 10),
-
-              // add note textfield
-              Container(
-                height: 50,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(20)),
-                child: TextField(
-                  controller: _addNoteController,
-                  decoration: const InputDecoration(
-                      hintText: 'e.g., Salary, Coffee, Shopping',
-                      border: OutlineInputBorder(borderSide: BorderSide.none)),
-                ),
-              ),
-
-              const SizedBox(height: 30),
+              const Spacer(),
 
               SizedBox(
-                height: 45,
                 width: double.infinity,
+                height: 48,
                 child: ElevatedButton(
-                    onPressed: _save,
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: isExpense ? Colors.red : Colors.green,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20))),
-                    child: AppText(
-                        isEditing
-                            ? (isExpense ? 'Save Expense' : 'Save Income')
-                            : (isExpense ? 'Add Expense' : 'Add Income'),
-                        20,
-                        Colors.white,
-                        FontWeight.bold)),
-              )
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isExpense ? Colors.red : Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: AppText(
+                    isEditing
+                        ? (isExpense ? 'Save Expense' : 'Save Income')
+                        : (isExpense ? 'Add Expense' : 'Add Income'),
+                    20,
+                    Colors.white,
+                    FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
             ],
           ),
         ),

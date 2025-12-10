@@ -10,44 +10,55 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin{
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
 
-  late AnimationController animation;
-  late Animation<double> _fadeInFadeOut;
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    animation = AnimationController(vsync: this, duration: Duration(seconds: 3));
-    _fadeInFadeOut = Tween<double>(begin: 0.0, end: 0.1).animate(animation);
-    
-    animation.addListener((){
-      if(animation.isCompleted){
-        animation.reverse();
-      } else{
-        animation.forward();
-      }
-    });
-    animation.repeat();
-    
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _controller.repeat(reverse: true);
+
     _checkCurrency();
   }
 
-  Future _checkCurrency() async{
+  Future<void> _checkCurrency() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool? isCurrencySelected = prefs.getBool("currency_selected");
 
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(const Duration(seconds: 3));
 
-    if(isCurrencySelected == true){
+    if (!mounted) return;
+
+    if (isCurrencySelected == true) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => HomeScreen()));
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => CurrencyPickerScreen()));
+        MaterialPageRoute(builder: (_) => const CurrencyPickerScreen()),
+      );
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -56,14 +67,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       backgroundColor: Colors.black,
       body: Center(
         child: FadeTransition(
-          opacity: animation,
-          child: Text(
+          opacity: _fadeAnimation,
+          child: const Text(
             'Budget Tracker',
             style: TextStyle(
               fontFamily: "Sen",
               fontSize: 25,
               fontWeight: FontWeight.bold,
-              color: Colors.white
+              color: Colors.white,
             ),
           ),
         ),

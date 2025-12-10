@@ -1,6 +1,6 @@
 import 'package:country_flags/country_flags.dart';
 import 'package:currency_picker/currency_picker.dart';
-import 'package:expense_tracker/screens/home%20screen/home_screen.dart';
+import 'package:expense_tracker/screens/home screen/home_screen.dart';
 import 'package:expense_tracker/widget/app_text.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,7 +13,6 @@ class CurrencyPickerScreen extends StatefulWidget {
 }
 
 class _CurrencyPickerScreenState extends State<CurrencyPickerScreen> {
-
   final _searchController = TextEditingController();
 
   List<Currency> allCurrencies = [];
@@ -33,7 +32,6 @@ class _CurrencyPickerScreenState extends State<CurrencyPickerScreen> {
 
   void filterSearch(String query) {
     query = query.toLowerCase();
-
     setState(() {
       filteredCurrencies = allCurrencies.where((currency) {
         final name = currency.name.toLowerCase();
@@ -49,11 +47,15 @@ class _CurrencyPickerScreenState extends State<CurrencyPickerScreen> {
 
   Future<void> _saveCurrency(Currency currency) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
     await prefs.setString('currency_symbol', currency.symbol);
     await prefs.setBool("currency_selected", true);
+
+    if (!mounted) return; // FIX: Prevent using context if widget unmounted
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => HomeScreen()),
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
     );
   }
 
@@ -66,7 +68,6 @@ class _CurrencyPickerScreenState extends State<CurrencyPickerScreen> {
           child: Column(
             children: [
               AppText('Select Currency', 18, Colors.black, FontWeight.bold),
-
               const SizedBox(height: 20),
 
               // Search box
@@ -76,17 +77,17 @@ class _CurrencyPickerScreenState extends State<CurrencyPickerScreen> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.grey.shade100,
-                  hint:AppText("Search currency or country...", 16, Colors.grey, FontWeight.w500) ,
+                  hintText: "Search currency or country...", // FIXED
+                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey),
                   ),
                 ),
               ),
 
               const SizedBox(height: 10),
 
-              // List of currencies
+              // Currency list
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -100,26 +101,22 @@ class _CurrencyPickerScreenState extends State<CurrencyPickerScreen> {
                       final currency = filteredCurrencies[index];
 
                       return ListTile(
-
                         leading: CircleAvatar(
                           radius: 20,
                           child: ClipOval(
-                            child: CountryFlag.fromCountryCode(currency.code.substring(0, 2)),
+                            child: CountryFlag.fromCountryCode(
+                                currency.code.substring(0, 2)),
                           ),
                         ),
-
                         title: AppText(currency.name, 18, Colors.black, FontWeight.bold),
-
                         subtitle: AppText(currency.code, 16, Colors.black, FontWeight.w300),
-
                         trailing: AppText(currency.symbol, 22, Colors.black, FontWeight.w500),
-
                         onTap: () => _saveCurrency(currency),
                       );
                     },
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),
